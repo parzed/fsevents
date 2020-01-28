@@ -7,6 +7,7 @@ import (
 	"sync"
 	"syscall"
 	"time"
+	"fmt"
 )
 
 // CreateFlags for creating a New stream.
@@ -82,6 +83,7 @@ type Event struct {
 
 // DeviceForPath returns the device ID for the specified volume.
 func DeviceForPath(path string) (int32, error) {
+	fmt.Println("fsevents.go : deviceforPath")
 	stat := syscall.Stat_t{}
 	if err := syscall.Lstat(path, &stat); err != nil {
 		return 0, err
@@ -126,6 +128,7 @@ type eventStreamRegistry struct {
 var registry = eventStreamRegistry{m: map[uintptr]*EventStream{}}
 
 func (r *eventStreamRegistry) Add(e *EventStream) uintptr {
+	fmt.Println("fsevents.go : ADD")
 	r.Lock()
 	defer r.Unlock()
 
@@ -135,6 +138,7 @@ func (r *eventStreamRegistry) Add(e *EventStream) uintptr {
 }
 
 func (r *eventStreamRegistry) Get(i uintptr) *EventStream {
+	fmt.Println("fsEvenets.go : Get")
 	r.Lock()
 	defer r.Unlock()
 
@@ -142,6 +146,7 @@ func (r *eventStreamRegistry) Get(i uintptr) *EventStream {
 }
 
 func (r *eventStreamRegistry) Delete(i uintptr) {
+	fmt.Println("fsevents.go : delete")
 	r.Lock()
 	defer r.Unlock()
 
@@ -150,6 +155,7 @@ func (r *eventStreamRegistry) Delete(i uintptr) {
 
 // Start listening to an event stream.
 func (es *EventStream) Start() {
+	fmt.Println("fsevents.go : start")
 	if es.Events == nil {
 		es.Events = make(chan []Event)
 	}
@@ -164,11 +170,13 @@ func (es *EventStream) Start() {
 
 // Flush events that have occurred but haven't been delivered.
 func (es *EventStream) Flush(sync bool) {
+	fmt.Println("fsevents.go : flush")
 	flush(es.stream, sync)
 }
 
 // Stop listening to the event stream.
 func (es *EventStream) Stop() {
+	fmt.Println("fsevents.go : stop")
 	if es.stream != nil {
 		stop(es.stream, es.rlref)
 		es.stream = nil
@@ -181,6 +189,7 @@ func (es *EventStream) Stop() {
 
 // Restart listening.
 func (es *EventStream) Restart() {
+	fmt.Println("fsevents.go : restart")
 	es.Stop()
 	es.Resume = true
 	es.Start()

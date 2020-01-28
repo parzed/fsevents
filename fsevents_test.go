@@ -33,6 +33,7 @@ func TestBasicExample(t *testing.T) {
 
 	wait := make(chan Event)
 	go func() {
+		//fmt.Println("test it here")
 		for msg := range es.Events {
 			for _, event := range msg {
 				t.Logf("Event: %#v", event)

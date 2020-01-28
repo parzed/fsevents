@@ -44,6 +44,7 @@ func LatestEventID() uint64 {
 //
 //export fsevtCallback
 func fsevtCallback(stream C.FSEventStreamRef, info uintptr, numEvents C.size_t, cpaths **C.char, cflags *C.FSEventStreamEventFlags, cids *C.FSEventStreamEventId) {
+	fmt.Println("wrap.go : fsevent call back")
 	l := int(numEvents)
 	events := make([]Event, l)
 
@@ -91,6 +92,7 @@ func GetStreamRefDescription(f FSEventStreamRef) string {
 // GetStreamRefPaths returns a copy of the paths being watched by
 // this stream
 func GetStreamRefPaths(f FSEventStreamRef) []string {
+	fmt.Println("wrap.go : getStreamRefPaths")
 	arr := C.FSEventStreamCopyPathsBeingWatched(f)
 	l := cfArrayLen(arr)
 
@@ -103,6 +105,7 @@ func GetStreamRefPaths(f FSEventStreamRef) []string {
 }
 
 func cfStringToGoString(cfs C.CFStringRef) string {
+	fmt.Println("wrap.go : cstringtoGoString")
 	if cfs == nullCFStringRef {
 		return ""
 	}
@@ -145,6 +148,7 @@ type CFRunLoopRef C.CFRunLoopRef
 
 // EventIDForDeviceBeforeTime returns an event ID before a given time.
 func EventIDForDeviceBeforeTime(dev int32, before time.Time) uint64 {
+	fmt.Println("wrap.go : eventIDforDeviceBeforeTime")
 	tm := C.CFAbsoluteTime(before.Unix())
 	return uint64(C.FSEventsGetLastEventIdForDeviceBeforeTime(C.dev_t(dev), tm))
 }
@@ -152,6 +156,7 @@ func EventIDForDeviceBeforeTime(dev int32, before time.Time) uint64 {
 // createPaths accepts the user defined set of paths and returns FSEvents
 // compatible array of paths
 func createPaths(paths []string) (C.CFArrayRef, error) {
+	fmt.Println("wrap.go : createPaths")
 	cPaths := C.ArrayCreateMutable(C.int(len(paths)))
 	var errs []error
 	for _, path := range paths {
@@ -173,6 +178,7 @@ func createPaths(paths []string) (C.CFArrayRef, error) {
 
 // makeCFString makes an immutable string with CFStringCreateWithCString.
 func makeCFString(str string) C.CFStringRef {
+	fmt.Println("wrap.go : makeCFString")
 	s := C.CString(str)
 	defer C.free(unsafe.Pointer(s))
 	return C.CFStringCreateWithCString(C.kCFAllocatorDefault, s, C.kCFStringEncodingUTF8)
@@ -187,6 +193,7 @@ func cfArrayLen(ref C.CFArrayRef) int {
 }
 
 func setupStream(paths []string, flags CreateFlags, callbackInfo uintptr, eventID uint64, latency time.Duration, deviceID int32) FSEventStreamRef {
+	fmt.Println("wrap.go : setup stream")
 	cPaths, err := createPaths(paths)
 	if err != nil {
 		log.Printf("Error creating paths: %s", err)
@@ -212,7 +219,7 @@ func setupStream(paths []string, flags CreateFlags, callbackInfo uintptr, eventI
 }
 
 func (es *EventStream) start(paths []string, callbackInfo uintptr) {
-
+	fmt.Println("wrap.go : start ")
 	since := eventIDSinceNow
 	if es.Resume {
 		since = es.EventID
@@ -250,6 +257,7 @@ func finalizer(es *EventStream) {
 
 // flush drains the event stream of undelivered events
 func flush(stream FSEventStreamRef, sync bool) {
+	fmt.Println("wrap.go : flush ")
 	if sync {
 		C.FSEventStreamFlushSync(stream)
 	} else {
@@ -259,6 +267,7 @@ func flush(stream FSEventStreamRef, sync bool) {
 
 // stop requests fsevents stops streaming events
 func stop(stream FSEventStreamRef, rlref CFRunLoopRef) {
+	fmt.Println("wrap.go : stop")
 	C.FSEventStreamStop(stream)
 	C.FSEventStreamInvalidate(stream)
 	C.FSEventStreamRelease(stream)
