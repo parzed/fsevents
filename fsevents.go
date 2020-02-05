@@ -79,11 +79,11 @@ type Event struct {
 	Path  string
 	Flags EventFlags
 	ID    uint64
+	OldPath string
 }
 
 // DeviceForPath returns the device ID for the specified volume.
 func DeviceForPath(path string) (int32, error) {
-	fmt.Println("fsevents.go : deviceforPath")
 	stat := syscall.Stat_t{}
 	if err := syscall.Lstat(path, &stat); err != nil {
 		return 0, err
@@ -114,6 +114,8 @@ type EventStream struct {
 	Latency time.Duration
 	// syscall represents this with an int32
 	Device int32
+	// this cache holds events to detect rename
+	RenameCache Cache
 }
 
 // eventStreamRegistry is a lookup table for EventStream references passed to
@@ -128,7 +130,6 @@ type eventStreamRegistry struct {
 var registry = eventStreamRegistry{m: map[uintptr]*EventStream{}}
 
 func (r *eventStreamRegistry) Add(e *EventStream) uintptr {
-	fmt.Println("fsevents.go : ADD")
 	r.Lock()
 	defer r.Unlock()
 
@@ -138,7 +139,6 @@ func (r *eventStreamRegistry) Add(e *EventStream) uintptr {
 }
 
 func (r *eventStreamRegistry) Get(i uintptr) *EventStream {
-	fmt.Println("fsEvenets.go : Get")
 	r.Lock()
 	defer r.Unlock()
 
@@ -146,7 +146,6 @@ func (r *eventStreamRegistry) Get(i uintptr) *EventStream {
 }
 
 func (r *eventStreamRegistry) Delete(i uintptr) {
-	fmt.Println("fsevents.go : delete")
 	r.Lock()
 	defer r.Unlock()
 
@@ -155,7 +154,7 @@ func (r *eventStreamRegistry) Delete(i uintptr) {
 
 // Start listening to an event stream.
 func (es *EventStream) Start() {
-	fmt.Println("fsevents.go : start")
+	fmt.Println("start in fsevents")
 	if es.Events == nil {
 		es.Events = make(chan []Event)
 	}
@@ -166,11 +165,11 @@ func (es *EventStream) Start() {
 	es.registryID = cbInfo
 	es.uuid = GetDeviceUUID(es.Device)
 	es.start(es.Paths, cbInfo)
+	es.RenameCache.Start(es)
 }
 
 // Flush events that have occurred but haven't been delivered.
 func (es *EventStream) Flush(sync bool) {
-	fmt.Println("fsevents.go : flush")
 	flush(es.stream, sync)
 }
 
